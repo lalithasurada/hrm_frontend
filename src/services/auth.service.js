@@ -1,7 +1,7 @@
 import { apiService } from './api.service';
 
 class AuthService {
-  // 1. LOGIN METHOD
+  // 1. LOGIN
   async login(email, password) {
     const result = await apiService.request('login', {
       method: 'POST',
@@ -9,49 +9,57 @@ class AuthService {
     });
 
     if (result.success) {
-      // Backend response nundi data teesukuntunnam
-      const data = result.data;
+      const { user, access_token } = result.data;
       
-      // Token key backend batti maarochu (access_token, token, access etc.)
-      // Manam anni check chestunnam safe side ki
-      const accessToken = data.access_token || data.token || data.access;
-      const user = data.user || { email }; // User object lekapote email tho create chestam
-
-      if (accessToken) {
-        localStorage.setItem('access_token', accessToken);
-        localStorage.setItem('user', JSON.stringify(user));
-        return { success: true, user };
+      // Store Token
+      if (access_token) {
+        localStorage.setItem('access_token', access_token);
       }
+
+      // Store User Info & Role Logic
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user)); 
+        localStorage.setItem('user_role', user.role); // Role: superadmin/admin/hr
+        localStorage.setItem('employee_id', user.employ_id); // EMP001
+      }
+      
+      return { success: true, user };
     }
     
     return result;
   }
 
-  // 2. LOGOUT METHOD
+  // 2. LOGOUT
   logout() {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('token_type');
-    localStorage.removeItem('expires_in');
+    localStorage.clear(); // Clear all data
   }
 
-  // 3. GET CURRENT USER
+  // 3. GET CURRENT USER OBJECT
   getCurrentUser() {
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
   }
 
-  // 4. IS AUTHENTICATED (Idi missing valla error vachindi)
+  // 4. CHECK IF LOGGED IN (This was missing!)
   isAuthenticated() {
     const token = localStorage.getItem('access_token');
-    return !!token; // Token unte true, lekapote false return chestundi
+    return !!token; // Returns true if token exists, false otherwise
   }
 
   // 5. GET TOKEN
   getToken() {
     return localStorage.getItem('access_token');
   }
+
+  // 6. GET ROLE (Helper)
+  getRole() {
+    return localStorage.getItem('user_role');
+  }
+
+  // 7. GET EMPLOYEE ID (Helper)
+  getEmployeeId() {
+    return localStorage.getItem('employee_id');
+  }
 }
 
-// Export singleton instance
 export const authService = new AuthService();

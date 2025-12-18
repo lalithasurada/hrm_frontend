@@ -1,14 +1,13 @@
 import React from 'react';
-import { Layout, Button, Space, Avatar, Dropdown, Typography, Badge, Input } from 'antd';
+import { Layout, Button, Space, Avatar, Dropdown, Typography, Badge, Switch } from 'antd';
 import { 
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BellOutlined,
-  SearchOutlined,
   UserOutlined,
   LogoutOutlined,
-  SettingOutlined,
-  QuestionCircleOutlined
+  MoonOutlined,
+  SunOutlined
 } from '@ant-design/icons';
 import { useTheme } from '../context/ThemeContext';
 import { authService } from '../services/auth.service';
@@ -17,13 +16,10 @@ const { Header } = Layout;
 const { Text } = Typography;
 
 const Navbar = ({ collapsed, onToggle, onLogout }) => {
-  const { currentTheme, isDarkMode } = useTheme();
+  const { currentTheme, isDarkMode, toggleTheme } = useTheme();
   const user = authService.getCurrentUser();
 
   const userMenuItems = [
-    { key: 'profile', icon: <UserOutlined />, label: 'My Profile' },
-    { key: 'settings', icon: <SettingOutlined />, label: 'Account Settings' },
-    { type: 'divider' },
     { key: 'logout', icon: <LogoutOutlined />, label: 'Logout', danger: true, onClick: onLogout }
   ];
 
@@ -32,7 +28,6 @@ const Navbar = ({ collapsed, onToggle, onLogout }) => {
       padding: '0 24px', 
       background: isDarkMode ? 'rgba(20, 20, 20, 0.85)' : 'rgba(255, 255, 255, 0.85)',
       backdropFilter: 'blur(10px)',
-      WebkitBackdropFilter: 'blur(10px)',
       position: 'sticky',
       top: 0,
       zIndex: 1000,
@@ -40,65 +35,42 @@ const Navbar = ({ collapsed, onToggle, onLogout }) => {
       alignItems: 'center',
       justifyContent: 'space-between',
       borderBottom: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`,
-      boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <Button
           type="text"
           icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
           onClick={onToggle}
-          style={{ 
-            fontSize: 16, 
-            width: 40, 
-            height: 40,
-            color: currentTheme.colorText // ICON COLOR FIX
-          }}
+          style={{ fontSize: 16, color: currentTheme.colorText }}
         />
-        
-        <Input 
-          prefix={<SearchOutlined style={{ color: isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.25)' }} />} 
-          placeholder="Search employees..." 
-          bordered={false}
-          style={{ 
-            background: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', 
-            borderRadius: 8,
-            width: 250,
-            color: currentTheme.colorText, // INPUT TEXT COLOR FIX
-            display: window.innerWidth > 768 ? 'flex' : 'none'
-          }}
-        />
+        <Text strong style={{ fontSize: 18, color: currentTheme.colorText }}>
+          HRM Dashboard
+        </Text>
       </div>
       
       <Space size={20}>
-        {/* ICON COLORS FIX */}
-        <Button 
-          type="text" 
-          icon={<QuestionCircleOutlined />} 
-          style={{ color: currentTheme.colorText }} 
+        {/* Theme Toggle Switch */}
+        <Switch 
+          checkedChildren={<MoonOutlined />} 
+          unCheckedChildren={<SunOutlined />} 
+          checked={isDarkMode} 
+          onChange={toggleTheme}
+          style={{ background: isDarkMode ? '#1677ff' : '#bfbfbf' }}
         />
-        
-        <Badge count={5} size="small" offset={[-5, 5]}>
-          <Button 
-            type="text" 
-            icon={<BellOutlined style={{ fontSize: 18 }} />} 
-            style={{ color: currentTheme.colorText }} 
-          />
+
+        <Badge count={3} size="small">
+          <Button type="text" icon={<BellOutlined />} style={{ color: currentTheme.colorText }} />
         </Badge>
 
-        <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
-          <Space style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 6, transition: 'all 0.3s' }}>
-            <Avatar 
-              src="https://randomuser.me/api/portraits/men/32.jpg" 
-              icon={<UserOutlined />} 
-              style={{ background: currentTheme.colorPrimary, border: '2px solid rgba(255,255,255,0.2)' }} 
-            />
+        <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+          <Space style={{ cursor: 'pointer', padding: '4px 8px' }}>
+            <Avatar style={{ background: currentTheme.colorPrimary }} icon={<UserOutlined />} />
             <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-              {/* USER NAME COLOR FIX */}
               <Text strong style={{ color: currentTheme.colorText, fontSize: 14 }}>
-                {user?.name || 'Admin User'}
+                {user?.name || 'User'}
               </Text>
               <Text style={{ color: currentTheme.colorTextSecondary, fontSize: 11 }}>
-                HR Manager
+                {user?.role || 'Employee'}
               </Text>
             </div>
           </Space>
