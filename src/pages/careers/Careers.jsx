@@ -6,8 +6,8 @@ import {
   PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, BankOutlined, EnvironmentOutlined 
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { careerService } from '../services/career.service';
-import { authService } from '../services/auth.service';
+import { careerService } from '../../services/career.service';
+import { authService } from '../../services/auth.service';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
