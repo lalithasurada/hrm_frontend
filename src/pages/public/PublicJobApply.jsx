@@ -28,6 +28,21 @@ const PublicJobApply = () => {
     }
   };
 
+  // --- VALIDATION FOR RESUME ---
+  const beforeUpload = (file) => {
+    const isPdfOrDoc = 
+        file.type === 'application/pdf' || 
+        file.type === 'application/msword' || 
+        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    
+    if (!isPdfOrDoc) {
+      message.error('You can only upload PDF or DOC/DOCX files!');
+      return Upload.LIST_IGNORE; // Prevent adding invalid file to list
+    }
+    
+    return false; // Prevent automatic upload (we handle it in onFinish)
+  };
+
   const onFinish = async (values) => {
     setLoading(true);
     const formData = new FormData();
@@ -100,17 +115,16 @@ const PublicJobApply = () => {
   );
 
   return (
-    // FIX: Using absolute position and 100vw to force full width and center alignment
     <div style={{ 
         background: '#f5f7fa', 
         minHeight: '100vh', 
         width: '100vw', 
-        position: 'absolute', // Breaks out of any parent restrictions
+        position: 'absolute',
         top: 0,
         left: 0,
         padding: '40px 20px',
         boxSizing: 'border-box',
-        overflowY: 'auto' // Enables scrolling for long forms
+        overflowY: 'auto'
     }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
             
@@ -155,9 +169,20 @@ const PublicJobApply = () => {
                         <Col xs={24} md={8}><Form.Item name="notice_period" label="Notice Period"><Input /></Form.Item></Col>
                     </Row>
 
-                    <Form.Item name="resume_file" label="Upload Resume (PDF/DOC)" valuePropName="fileList" getValueFromEvent={(e) => Array.isArray(e) ? e : e?.fileList} rules={[{ required: true, message: 'Please upload resume' }]}>
-                        <Upload maxCount={1} beforeUpload={() => false}>
-                            <Button icon={<UploadOutlined />} size="large" block>Select File</Button>
+                    {/* FIXED: RESTRICT FILE TYPES */}
+                    <Form.Item 
+                        name="resume_file" 
+                        label="Upload Resume (PDF/DOC Only)" 
+                        valuePropName="fileList" 
+                        getValueFromEvent={(e) => Array.isArray(e) ? e : e?.fileList} 
+                        rules={[{ required: true, message: 'Please upload resume' }]}
+                    >
+                        <Upload 
+                            maxCount={1} 
+                            beforeUpload={beforeUpload} // Strict Validation
+                            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" // Filter Picker
+                        >
+                            <Button icon={<UploadOutlined />} size="large" block>Select File (PDF/DOC)</Button>
                         </Upload>
                     </Form.Item>
 

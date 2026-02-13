@@ -26,10 +26,10 @@ class UserService {
     });
   }
 
-  async updateUser(userId, formData) {
+   async updateUser(userId, userData) {
     return await apiService.request('updateUser', {
-      method: 'PUT',
-      body: formData, 
+      method: 'PATCH', // Changed to PATCH as per your code
+      body: JSON.stringify(userData), // Backend needs JSON String
       urlOverride: `/users/update/${userId}`
     });
   }

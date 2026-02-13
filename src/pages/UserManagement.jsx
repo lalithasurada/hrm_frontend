@@ -39,19 +39,15 @@ const UserManagement = () => {
     }
   }, [selectedDesignation]);
 
-  // --- FIXED FETCH FUNCTION ---
   const fetchAllUsers = async () => {
     setLoading(true);
     try {
       const res = await userService.getAllUsers();
-      console.log("Users API Response:", res); // Debug log
-
-      // FIX: Handle nested data structure { data: [...], total_count: ... }
       if (res.success) {
           if (res.data && Array.isArray(res.data.data)) {
-              setAllUsers(res.data.data); // Correct path for your response
+              setAllUsers(res.data.data);
           } else if (Array.isArray(res.data)) {
-              setAllUsers(res.data); // Fallback
+              setAllUsers(res.data);
           } else {
               setAllUsers([]);
           }
@@ -69,7 +65,6 @@ const UserManagement = () => {
       try {
           const res = await userService.getTeamLeads();
           if (res.success) {
-              // Same fix for Team Leads if needed
               const leads = res.data?.data || (Array.isArray(res.data) ? res.data : []);
               setTeamLeads(leads);
           }
@@ -95,12 +90,10 @@ const UserManagement = () => {
   const getFilteredUsers = () => {
     if (!allUsers.length) return [];
     return allUsers.filter(user => {
-        // Safe check for role
         const targetRole = user.role ? user.role.trim().toLowerCase() : '';
         let isAllowed = false;
         
         if (myRole === 'superadmin') isAllowed = true;
-        // Adjusted logic to include 'developer' if that's what backend sends (based on your JSON)
         else if (myRole === 'admin') isAllowed = ['hr', 'recruiter', 'employee', 'developer'].some(r => targetRole.includes(r));
         else if (myRole === 'hr') isAllowed = ['recruiter', 'employee', 'developer'].some(r => targetRole.includes(r));
         
@@ -111,42 +104,33 @@ const UserManagement = () => {
   };
 
   const beforeUpload = (file) => {
-    const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
-    if (!isJpgOrPng) message.error('You can only upload JPG/PNG file!');
-    const isLt2M = file.size / 1024 / 1024 < 2; 
-    if (!isLt2M) message.error('Image must smaller than 2MB!');
-    return isJpgOrPng && isLt2M ? false : Upload.LIST_IGNORE;
+    return false; // Prevent auto upload
   };
 
+  // --- FIXED: SEND JSON OBJECT (NOT FORMDATA) ---
   const handleFinish = async (values) => {
     setLoading(true);
 
-    const formData = new FormData();
-    formData.append('employ_id', values.employ_id);
-    formData.append('name', values.name);
-    formData.append('email', values.email);
-    formData.append('office_mail', values.office_mail);
-    formData.append('role', values.role);
-    formData.append('mobile', values.mobile);
-    formData.append('created_by', myEmpId || 'dev');
+    const payload = {
+        employ_id: values.employ_id,
+        name: values.name,
+        email: values.email,
+        office_mail: values.office_mail,
+        role: values.role,
+        mobile: values.mobile,
+        created_by: myEmpId || 'dev',
+        designation: values.role === 'recruiter' ? values.designation : null,
+        team_lead_id: (values.role === 'recruiter' && values.designation === 'team_member') ? values.team_lead_id : null
+    };
 
-    if (values.role === 'recruiter' && values.designation) {
-        formData.append('designation', values.designation);
-    }
-    if (values.role === 'recruiter' && values.designation === 'team_member' && values.team_lead_id) {
-        formData.append('team_lead_id', values.team_lead_id);
-    }
-
-    if (values.profile_picture && values.profile_picture.length > 0) {
-        formData.append('profile_picture', values.profile_picture[0].originFileObj);
-    }
+    console.log("Sending JSON Payload:", payload);
 
     let result;
     try {
         if (editingUser) {
-            result = await userService.updateUser(editingUser.id, formData);
+            result = await userService.updateUser(editingUser.id, payload);
         } else {
-            result = await userService.createUser(formData);
+            result = await userService.createUser(payload);
         }
 
         if (result.success) {
@@ -199,7 +183,16 @@ const UserManagement = () => {
   const openModal = (user = null) => {
     setEditingUser(user);
     if (user) {
-        form.setFieldsValue(user);
+        form.setFieldsValue({
+            ...user,
+            // Show existing image in preview, but upload is disabled for now in Logic
+            profile_picture: user.user_profile_picture ? [{
+                uid: '-1',
+                name: 'Profile Picture',
+                status: 'done',
+                url: user.user_profile_picture,
+            }] : []
+        });
     } else {
         form.resetFields();
     }
@@ -223,7 +216,6 @@ const UserManagement = () => {
     { title: 'Office Mail', dataIndex: 'office_mail', key: 'office_mail', width: 250, ellipsis: true, responsive: ['md'] },
     { title: 'Role', dataIndex: 'role', key: 'role', width: 150,
       render: (role) => {
-        // Added trim and lowercase to handle " developer" (space issue in backend)
         const r = role ? role.trim().toLowerCase() : '';
         let color = r === 'superadmin' ? 'gold' : r === 'admin' ? 'purple' : r === 'hr' ? 'green' : 'cyan';
         return <Tag color={color}>{r.toUpperCase()}</Tag>;
@@ -281,7 +273,6 @@ const UserManagement = () => {
         />
       </Card>
 
-      {/* MODAL code remains same as previous ... (No changes needed in Modal) */}
       <Modal
         title={editingUser ? "Edit User" : "Create New User"}
         open={isModalOpen}
@@ -292,18 +283,22 @@ const UserManagement = () => {
       >
         <Form form={form} layout="vertical" onFinish={handleFinish} style={{ marginTop: 20 }}>
             <Row gutter={16}>
-                <Col span={12}><Form.Item name="name" label="Full Name" rules={[{ required: true }]}><Input prefix={<UserOutlined />} /></Form.Item></Col>
-                <Col span={12}><Form.Item name="employ_id" label="Employee ID" rules={[{ required: true }]}><Input prefix={<IdcardOutlined />} /></Form.Item></Col>
+                <Col span={12}><Form.Item name="name" label="Full Name" rules={[{ required: true, message: 'Name is required' }]}>
+                    <Input prefix={<UserOutlined />} /></Form.Item></Col>
+                <Col span={12}><Form.Item name="employ_id" label="Employee ID" rules={[{ required: true, message: 'ID required' }]}>
+                    <Input prefix={<IdcardOutlined />} /></Form.Item></Col>
             </Row>
             <Row gutter={16}>
-                <Col span={12}><Form.Item name="email" label="Personal Email" rules={[{ required: true }]}><Input prefix={<MailOutlined />} /></Form.Item></Col>
+                <Col span={12}><Form.Item name="email" label="Personal Email" rules={[{ required: true, type: 'email' }]}>
+                    <Input prefix={<MailOutlined />} /></Form.Item></Col>
                 <Col span={12}><Form.Item name="office_mail" label="Office Email"><Input prefix={<MailOutlined />} /></Form.Item></Col>
             </Row>
-            <Form.Item name="mobile" label="Mobile Number"rules={[{ required: true }]}><Input prefix={<MobileOutlined />} /></Form.Item>
+            <Form.Item name="mobile" label="Mobile Number"><Input prefix={<MobileOutlined />} /></Form.Item>
             
-            <Form.Item name="profile_picture" label="Profile Picture" rules={[{ required: true }]}valuePropName="fileList" getValueFromEvent={normFile}>
-                <Upload beforeUpload={beforeUpload} listType="picture" maxCount={1} accept="image/png, image/jpeg">
-                    <Button icon={<UploadOutlined />}>Click to Upload (Max 2MB)</Button>
+            {/* Image upload UI is here but won't send file to backend in JSON mode */}
+            <Form.Item name="profile_picture" label="Profile Picture (Disabled in JSON mode)" valuePropName="fileList" getValueFromEvent={normFile}>
+                <Upload beforeUpload={beforeUpload} listType="picture-card" maxCount={1} disabled>
+                     <div><PlusOutlined /><div style={{ marginTop: 8 }}>Upload</div></div>
                 </Upload>
             </Form.Item>
 
@@ -314,7 +309,7 @@ const UserManagement = () => {
             </Form.Item>
 
             {selectedRole === 'recruiter' && (
-                <Form.Item name="designation" label="Designation"><Select><Option value="team_lead">Team Leader</Option><Option value="team_member">Team Member</Option></Select></Form.Item>
+                <Form.Item name="designation" label="Designation"><Select><Option value="team_leader">Team Leader</Option><Option value="team_member">Team Member</Option></Select></Form.Item>
             )}
 
             {selectedRole === 'recruiter' && selectedDesignation === 'team_member' && (

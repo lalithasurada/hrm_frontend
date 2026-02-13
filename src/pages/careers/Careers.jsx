@@ -310,7 +310,7 @@ const Careers = () => {
                 <Form.Item name="employment_type" label="Employment Type" rules={[{ required: true }]}>
                     <Select>
                         <Option value="Full-time">Full-time</Option>
-                        <Option value="Part-time">Part-time</Option>
+                        <Option value="Part-time">Intern</Option>
                         <Option value="Contract">Contract</Option>
                     </Select>
                 </Form.Item>
