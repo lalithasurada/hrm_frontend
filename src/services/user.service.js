@@ -9,12 +9,13 @@ class UserService {
     return await apiService.request('getAllUsers', { method: 'GET' });
   }
 
-  // --- UPDATED: Create User uses specific IP ---
+  // CREATE - Uses FormData with SPECIFIC API URL
   async createUser(formData) {
+    console.log('UserService: Creating user with FormData');
     return await apiService.request('createUser', {
       method: 'POST',
       body: formData,
-      // Direct IP Address Override
+      // Use the specific wapsend.in URL for user creation
       urlOverride: 'https://hrm-backend.wapsend.in/users/create/user'
     });
   }
@@ -26,10 +27,12 @@ class UserService {
     });
   }
 
-   async updateUser(userId, userData) {
+  // UPDATE - Uses JSON
+  async updateUser(userId, updateData) {
+    console.log('UserService: Updating user with JSON:', updateData);
     return await apiService.request('updateUser', {
-      method: 'PATCH', // Changed to PATCH as per your code
-      body: JSON.stringify(userData), // Backend needs JSON String
+      method: 'PATCH',
+      body: JSON.stringify(updateData),
       urlOverride: `/users/update/${userId}`
     });
   }
